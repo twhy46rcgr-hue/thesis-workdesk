@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论文工作台</title>
+<style>
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0d0f13; --panel:#14171d; --panel2:#191d25; --panel3:#1f242e;
+  --line:#272c36; --line2:#353c4a;
+  --tx:#e7eaf0; --tx2:#98a2b3; --tx3:#69717f;
+  --accent:#6b8ef7; --accent-soft:rgba(107,142,247,.14);
+  --red:#f0665d; --red-soft:rgba(240,102,93,.13);
+  --orange:#e0a13c; --orange-soft:rgba(224,161,60,.13);
+  --green:#4cc38a; --green-soft:rgba(76,195,138,.13);
+  --violet:#b083f0; --violet-soft:rgba(176,131,240,.13);
+  --shadow:0 8px 28px rgba(0,0,0,.45);
+}
+:root[data-theme="light"]{
+  color-scheme: light;
+  --bg:#f3f5f8; --panel:#ffffff; --panel2:#f8f9fb; --panel3:#eef1f5;
+  --line:#e3e7ee; --line2:#d2d8e2;
+  --tx:#161b22; --tx2:#59626f; --tx3:#8b939f;
+  --accent:#2f5fd0; --accent-soft:rgba(47,95,208,.09);
+  --red:#d93a30; --red-soft:rgba(217,58,48,.09);
+  --orange:#b8791a; --orange-soft:rgba(184,121,26,.10);
+  --green:#1a8f5f; --green-soft:rgba(26,143,95,.10);
+  --violet:#7a45cf; --violet-soft:rgba(122,69,207,.10);
+  --shadow:0 6px 22px rgba(18,26,40,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--tx);
+  font-family:"PingFang SC","Microsoft YaHei","Source Han Sans SC","Hiragino Sans GB",-apple-system,sans-serif;
+  font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  padding-bottom:60px;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--tx3)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- topbar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; gap:14px;
+  padding:0 22px; height:56px;
+  background:var(--bg);
+  background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:15px;letter-spacing:.2px}
+.brand .logo{
+  width:24px;height:24px;border-radius:7px;
+  background:linear-gradient(135deg,var(--accent),var(--violet));
+  display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;
+}
+.topbar .spacer{flex:1}
+.tbtn{
+  display:inline-flex;align-items:center;gap:6px;
+  height:32px;padding:0 12px;border-radius:8px;
+  border:1px solid var(--line2); background:var(--panel2);
+  color:var(--tx2); font-size:13px; white-space:nowrap;
+  transition:.15s;
+}
+.tbtn:hover{color:var(--tx);border-color:var(--accent);background:var(--accent-soft)}
+.tbtn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+.tbtn.primary:hover{filter:brightness(1.1);color:#fff}
+
+/* ---------- summary ---------- */
+.wrap{max-width:1280px;margin:0 auto;padding:22px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;position:relative;overflow:hidden;
+}
+.stat::after{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--accent);opacity:.55;
+}
+.stat:nth-child(2)::after{background:var(--orange)}
+.stat:nth-child(3)::after{background:var(--violet)}
+.stat:nth-child(4)::after{background:var(--green)}
+.stat-l{font-size:12px;color:var(--tx3);letter-spacing:.4px}
+.stat-v{font-size:22px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+.stat-v i{font-size:12px;font-style:normal;color:var(--tx3);font-weight:400;margin-left:3px}
+.stat-s{font-size:11.5px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warn{color:var(--orange)} .danger{color:var(--red)} .ok{color:var(--green)}
+
+/* ---------- node strip ---------- */
+.nodes{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:12px 0 12px 16px;margin-bottom:18px;
+}
+.nodes-h{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx2);margin-bottom:10px}
+.nodes-h b{color:var(--tx);font-weight:600}
+.nodes-scroll{display:flex;gap:9px;overflow-x:auto;padding-bottom:4px;padding-right:16px}
+.node{
+  flex:0 0 auto;display:flex;flex-direction:column;gap:2px;
+  min-width:132px;padding:8px 11px;border-radius:10px;
+  background:var(--panel2);border:1px solid var(--line);
+}
+.node .nd{font-size:11px;color:var(--tx3);font-variant-numeric:tabular-nums}
+.node .nn{font-size:12.5px;font-weight:500;line-height:1.35}
+.node .np{font-size:11px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.node.soon{border-color:var(--orange);background:var(--orange-soft)}
+.node.over{border-color:var(--red);background:var(--red-soft)}
+
+/* ---------- tabs ---------- */
+.toolrow{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);padding:3px;border-radius:10px}
+.tab{
+  padding:6px 14px;border-radius:7px;font-size:13px;color:var(--tx2);transition:.15s;
+}
+.tab:hover{color:var(--tx)}
+.tab.on{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.toolrow .spacer{flex:1}
+.hint-txt{font-size:12px;color:var(--tx3)}
+
+/* ---------- board ---------- */
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.pcard{
+  background:var(--panel);border:1px solid var(--line);border-radius:15px;
+  padding:16px;cursor:pointer;transition:.18s;position:relative;
+}
+.pcard:hover{transform:translateY(-2px);border-color:var(--line2);box-shadow:var(--shadow)}
+.pcard-top{display:flex;align-items:center;gap:7px;margin-bottom:9px;flex-wrap:wrap}
+.chip{
+  font-size:11px;padding:2px 8px;border-radius:6px;letter-spacing:.2px;
+  background:var(--panel3);color:var(--tx2);
+}
+.chip.c-course{background:var(--accent-soft);color:var(--accent)}
+.chip.c-scholar{background:var(--violet-soft);color:var(--violet)}
+.chip.days{margin-left:auto;font-variant-numeric:tabular-nums;background:transparent;padding:2px 0}
+.pcard h3{font-size:15.5px;font-weight:600;line-height:1.45;margin-bottom:4px}
+.pcard .sub{font-size:12px;color:var(--tx3);margin-bottom:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:5px;border-radius:3px;background:var(--panel3);overflow:hidden;margin-bottom:9px}
+.bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--violet));transition:width .35s}
+.pfoot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--tx2);margin-bottom:5px}
+.pfoot .mono{font-variant-numeric:tabular-nums}
+.refmini{display:flex;gap:12px;font-size:11.5px;color:var(--tx3);padding-top:9px;border-top:1px dashed var(--line);margin-top:9px}
+.refmini b{color:var(--tx2);font-weight:500}
+
+.empty{
+  grid-column:1/-1;text-align:center;padding:64px 20px;
+  border:1px dashed var(--line2);border-radius:16px;background:var(--panel);
+}
+.empty h3{font-size:16px;margin-bottom:8px}
+.empty p{color:var(--tx3);font-size:13px;margin-bottom:6px}
+.empty .tbtn{margin-top:14px}
+
+/* ---------- modal ---------- */
+.overlay{
+  position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  animation:fade .16s ease;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--panel);border:1px solid var(--line2);border-radius:16px;
+  width:100%;max-width:1080px;max-height:90vh;display:flex;flex-direction:column;
+  box-shadow:0 24px 70px rgba(0,0,0,.5);animation:pop .18s ease;overflow:hidden;
+}
+@keyframes pop{from{transform:translateY(10px) scale(.99);opacity:0}to{transform:none;opacity:1}}
+.modal.small{max-width:560px}
+.mhead{padding:18px 20px 14px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+.mhead .tt{flex:1;min-width:0}
+.mtitle{
+  width:100%;background:transparent;border:none;outline:none;
+  font-size:18px;font-weight:600;padding:2px 0;border-bottom:1px solid transparent;
+}
+.mtitle:focus{border-bottom-color:var(--accent)}
+.mmeta{display:flex;gap:10px;align-items:center;margin-top:7px;flex-wrap:wrap}
+.xbtn{width:30px;height:30px;border-radius:8px;color:var(--tx3);font-size:17px;display:grid;place-items:center;flex:0 0 auto}
+.xbtn:hover{background:var(--panel3);color:var(--tx)}
+.mbar{display:flex;gap:16px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--panel2)}
+.field{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx3)}
+.field input,.field select{
+  background:var(--panel);border:1px solid var(--line2);border-radius:7px;
+  padding:5px 8px;font-size:12.5px;color:var(--tx);outline:none;
+}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field input[type=date]{font-variant-numeric:tabular-nums}
+.mtabs{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.mtab{padding:11px 15px;font-size:13px;color:var(--tx2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s}
+.mtab:hover{color:var(--tx)}
+.mtab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
+.mbody{padding:18px 20px 24px;overflow-y:auto;flex:1}
+
+/* ---------- stage table ---------- */
+table.grid{width:100%;border-collapse:collapse;font-size:13px}
+table.grid th{
+  text-align:left;font-weight:500;font-size:11.5px;color:var(--tx3);
+  padding:0 10px 9px;border-bottom:1px solid var(--line);letter-spacing:.4px;
+}
+table.grid td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.grid tr:last-child td{border-bottom:none}
+table.grid tr.s-done td:nth-child(2){color:var(--tx3);text-decoration:line-through;text-decoration-color:var(--line2)}
+table.grid tr.s-doing{background:var(--accent-soft)}
+table.grid tr.s-stuck{background:var(--red-soft)}
+.sname{font-weight:500}
+.shint{font-size:11px;color:var(--tx3);font-weight:400;margin-top:1px}
+.datecell{font-variant-numeric:tabular-nums;font-size:12px;color:var(--tx2);white-space:nowrap}
+.datecell.od{color:var(--red)}
+.sel{
+  background:var(--panel);border:1px solid var(--line2);border-radius:6px;
+  padding:4px 6px;font-size:12px;outline:none;
+}
+.sel:focus{border-color:var(--accent)}
+.notein{
+  width:100%;background:transparent;border:1px solid transparent;border-radius:6px;
+  padding:4px 7px;font-size:12px;outline:none;color:var(--tx2);
+}
+.notein:hover{border-color:var(--line)}
+.notein:focus{border-color:var(--accent);background:var(--panel2);color:var(--tx)}
+.barline{height:6px;border-radius:3px;background:var(--panel3);overflow:hidden;margin:14px 0 10px}
+.barline i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--violet));transition:width .35s}
+.callout{
+  display:flex;gap:9px;padding:11px 13px;border-radius:10px;
+  background:var(--panel2);border:1px solid var(--line);font-size:12.5px;color:var(--tx2);
+  line-height:1.65;margin-bottom:14px;
+}
+.callout b{color:var(--tx)}
+.callout .ic{color:var(--accent);flex:0 0 auto}
+
+/* ---------- refs ---------- */
+.refbar{display:flex;gap:8px;margin-bottom:13px;flex-wrap:wrap;align-items:center}
+.refbar .spacer{flex:1}
+.reftable td{font-size:12.5px}
+.ref-title{font-weight:500;color:var(--tx);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
+.ref-src{font-size:11.5px;color:var(--tx3);margin-top:2px;font-variant-numeric:tabular-nums}
+.pf{
+  display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:5px;
+  background:var(--panel3);color:var(--tx3);white-space:nowrap;
+}
+.st-sel{border-radius:6px;padding:3px 5px;font-size:11.5px;border:1px solid var(--line2);background:var(--panel);outline:none}
+.st-todo{color:var(--tx3)}
+.st-read{color:var(--accent);border-color:var(--accent)}
+.st-cited{color:var(--green);border-color:var(--green);background:var(--green-soft)}
+.iconbtn{width:26px;height:26px;border-radius:6px;color:var(--tx3);display:grid;place-items:center;font-size:13px}
+.iconbtn:hover{background:var(--panel3);color:var(--red)}
+.anchorin{
+  width:100%;background:transparent;border:1px solid transparent;border-radius:6px;
+  padding:3px 6px;font-size:11.5px;color:var(--tx2);outline:none;
+}
+.anchorin:hover{border-color:var(--line)}
+.anchorin:focus{border-color:var(--accent);background:var(--panel2)}
+
+/* ---------- forms ---------- */
+.form{display:grid;gap:12px}
+.form label{display:block;font-size:12px;color:var(--tx2);margin-bottom:5px}
+.form input,.form select,.form textarea{
+  width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:9px;
+  padding:9px 11px;font-size:13.5px;outline:none;transition:.15s;
+}
+.form input:focus,.form select:focus,.form textarea:focus{border-color:var(--accent);background:var(--panel)}
+.form textarea{resize:vertical;line-height:1.6;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+.form .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form .req{color:var(--red);margin-left:2px}
+.btnrow{display:flex;gap:9px;justify-content:flex-end;margin-top:6px}
+.btn{
+  padding:8px 16px;border-radius:9px;font-size:13px;border:1px solid var(--line2);
+  background:var(--panel2);color:var(--tx2);transition:.15s;
+}
+.btn:hover{color:var(--tx);border-color:var(--tx3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn.danger:hover{background:var(--red-soft)}
+
+/* ---------- words ---------- */
+.wgrid{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.chartbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.chartbox svg{width:100%;display:block;overflow:visible}
+.waxis{display:flex;margin-top:5px}
+.waxis span{flex:1;text-align:center;font-size:9.5px;color:var(--tx3);font-variant-numeric:tabular-nums}
+.winput{display:flex;gap:8px;margin-bottom:14px}
+.winput input{
+  flex:1;background:var(--panel2);border:1px solid var(--line2);border-radius:9px;
+  padding:9px 12px;font-size:14px;outline:none;font-variant-numeric:tabular-nums;
+}
+.winput input:focus{border-color:var(--accent)}
+.wlist{max-height:230px;overflow-y:auto;font-size:12.5px}
+.wrow{display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.wrow:last-child{border-bottom:none}
+.wrow span:last-child{color:var(--tx);font-weight:500}
+.wrow .del{color:var(--tx3);cursor:pointer;font-size:11px;margin-left:8px}
+.wrow .del:hover{color:var(--red)}
+
+.kv{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--line)}
+.kv:last-child{border-bottom:none}
+.kv span:first-child{color:var(--tx3)}
+.kv b{font-variant-numeric:tabular-nums;font-weight:600}
+
+.refout{
+  width:100%;min-height:300px;background:var(--panel2);border:1px solid var(--line2);
+  border-radius:10px;padding:13px;font-family:ui-monospace,Consolas,monospace;
+  font-size:12.5px;line-height:1.85;resize:vertical;outline:none;color:var(--tx);
+}
+.tip{font-size:11.5px;color:var(--tx3);margin-top:8px;line-height:1.7}
+.tip code{background:var(--panel3);padding:1px 5px;border-radius:4px;font-size:11px}
+
+@media (max-width:900px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .wgrid{grid-template-columns:1fr}
+  .form .row3{grid-template-columns:1fr 1fr}
+  .wrap{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="logo">论</span>论文工作台</div>
+  <div class="spacer"></div>
+  <button class="tbtn primary" data-act="new-paper">＋ 新建论文</button>
+  <button class="tbtn" data-act="export-json">导出备份</button>
+  <button class="tbtn" data-act="import-json">导入备份</button>
+  <button class="tbtn" data-act="theme" id="themeBtn">明/暗</button>
+  <button class="tbtn" data-act="help">说明</button>
+</header>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="nodes" id="nodes"></div>
+  <div class="toolrow">
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-act="filter" data-f="all">全部</button>
+      <button class="tab" data-act="filter" data-f="course">课程作业</button>
+      <button class="tab" data-act="filter" data-f="scholar">学位与发表</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="hint-txt" id="boardHint"></div>
+  </div>
+  <div class="board" id="board"></div>
+</div>
+
+<div id="modalRoot"></div>
+<input type="file" id="fileInput" accept=".json" style="display:none">
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   1. 常量定义
+   ========================================================= */
+
+const LS_KEY = "thesis_workdesk_v1";
+
+// 七阶段流水线与权重（合计 100）
+const STAGES = [
+  { key:"topic",   name:"选题定向",   w:8,  hint:"确定论题、问题意识、核心论点与创新点" },
+  { key:"lit",     name:"文献综述",   w:22, hint:"检索 → 精读 → 写出综述初稿" },
+  { key:"outline", name:"提纲",       w:12, hint:"三级标题，每节写清论点与支撑材料" },
+  { key:"draft",   name:"初稿",       w:33, hint:"一口气写完，中途不回头改" },
+  { key:"revise",  name:"修改",       w:15, hint:"结构调整、论证补强、删冗余" },
+  { key:"cite",    name:"引注与格式", w:6,  hint:"GB/T 7714 著录、脚注、图表编号" },
+  { key:"final",   name:"定稿查重",   w:4,  hint:"摘要关键词、查重、按要求提交" }
+];
+
+const CATS = { course:"课程作业", scholar:"学位与发表" };
+const KINDS = ["课程论文","投稿论文","学位论文"];
+
+const REF_TYPES = {
+  J:"期刊论文", M:"专著", D:"学位论文", C:"论文集",
+  N:"报纸", S:"标准", R:"报告", P:"专利", EB:"电子资源"
+};
+
+const READ_STATUS = { todo:"待读", read:"已读", cited:"已引" };
+const STAGE_STATUS = { todo:"未开始", doing:"进行中", stuck:"卡住", done:"已完成" };
+
+// 解析规则里可识别的文献类型标识（GB/T 7714-2015 文献类型标识代码）
+const TYPE_MAP = {
+  "J":"J","M":"M","D":"D","C":"C","N":"N","S":"S","R":"R","P":"P",
+  "A":"C","G":"C","Z":"J",
+  "EB":"EB","DB":"EB","CP":"EB","EB/OL":"EB","DB/OL":"EB","CP/DOL":"EB"
+};
+
+/* =========================================================
+   2. 工具函数
+   ========================================================= */
+
+const DAY = 86400000;
+
+function pad2(n){ return n < 10 ? "0" + n : "" + n; }
+
+function parseDate(s){
+  if(!s) return null;
+  const p = String(s).split("-");
+  if(p.length !== 3) return null;
+  const dt = new Date(+p[0], +p[1] - 1, +p[2]);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+function fmtDate(dt){
+  if(!dt) return "";
+  return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate());
+}
+
+function todayStr(){ return fmtDate(new Date()); }
+
+function addDays(dt, n){
+  const x = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+function diffDays(a, b){
+  const A = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
+  const B = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+  return Math.round((B - A) / DAY);
+}
+
+function daysLeft(deadline){
+  const e = parseDate(deadline);
+  if(!e) return null;
+  return diffDays(new Date(), e);
+}
+
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+function uid(){
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function num(n){
+  return (n || 0).toLocaleString("en-US");
+}
+
+function shortDate(s){
+  const d = parseDate(s);
+  if(!d) return "—";
+  return (d.getMonth() + 1) + "月" + d.getDate() + "日";
+}
+
+/* =========================================================
+   3. 状态与持久化
+   ========================================================= */
+
+let S = null;
+const U = { detailId:null, tab:"stages", filter:"all", layer:"none" };
+
+function blankState(){
+  return { version:1, papers:[], theme:"dark" };
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return null;
+    const o = JSON.parse(raw);
+    if(!o || !Array.isArray(o.papers)) return null;
+    o.papers.forEach(p => {
+      p.stages = p.stages || [];
+      p.refs = p.refs || [];
+      p.wordLog = p.wordLog || {};
+    });
+    return o;
+  }catch(e){
+    console.warn("读取本地数据失败", e);
+    return null;
+  }
+}
+
+function save(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(S));
+  }catch(e){
+    alert("保存失败：浏览器存储空间可能已满。请先导出备份。");
+  }
+}
+
+function getPaper(id){
+  return S.papers.find(p => p.id === id) || null;
+}
+
+/* =========================================================
+   4. 倒排算法
+   ========================================================= */
+
+/**
+ * 按最终截止日，从后往前给七个阶段分配计划起止日。
+ * 保留已标记的状态、实际完成日与备注，只重算 planStart / planEnd。
+ */
+function reschedule(paper, fromStr){
+  const end = parseDate(paper.finalDeadline);
+  if(!end) return false;
+
+  const startBase = parseDate(fromStr || paper.scheduleFrom || todayStr()) || new Date();
+  let totalDays = diffDays(startBase, end) + 1;
+  if(totalDays < 1) totalDays = 1;
+
+  // 预留缓冲：时间越紧缓冲越少，避免阶段被压成 0 天
+  let buffer = totalDays >= 10 ? Math.max(1, Math.round(totalDays * 0.08)) : 0;
+  let workDays = totalDays - buffer;
+  if(workDays < STAGES.length){
+    workDays = STAGES.length;
+    buffer = 0;
+  }
+
+  // 最大余数法：按权重把 workDays 分给七个阶段，每阶段至少 1 天
+  const totalW = STAGES.reduce((a, s) => a + s.w, 0);
+  const rawAlloc = STAGES.map(s => workDays * s.w / totalW);
+  let alloc = rawAlloc.map(v => Math.floor(v));
+  let rest = workDays - alloc.reduce((a, b) => a + b, 0);
+  const order = rawAlloc
+    .map((v, i) => ({ i:i, frac: v - Math.floor(v) }))
+    .sort((a, b) => b.frac - a.frac);
+  for(let k = 0; k < rest; k++) alloc[order[k % order.length].i]++;
+
+  // 保底：每阶段至少 1 天
+  alloc = alloc.map(v => Math.max(1, v));
+
+  // 从后往前落日期
+  let cursorEnd = addDays(end, -buffer);
+  const plans = new Array(STAGES.length);
+  for(let i = STAGES.length - 1; i >= 0; i--){
+    const pe = cursorEnd;
+    const ps = addDays(pe, -(alloc[i] - 1));
+    plans[i] = { planStart: fmtDate(ps), planEnd: fmtDate(pe) };
+    cursorEnd = addDays(ps, -1);
+  }
+
+  const old = paper.stages || [];
+  paper.stages = STAGES.map((s, i) => {
+    const prev = old.find(o => o.key === s.key) || old[i] || {};
+    return {
+      key: s.key,
+      name: s.name,
+      weight: s.w,
+      hint: s.hint,
+      planStart: plans[i].planStart,
+      planEnd: plans[i].planEnd,
+      status: prev.status || "todo",
+      actualEnd: prev.actualEnd || "",
+      note: prev.note || ""
+    };
+  });
+  paper.scheduledAt = todayStr();
+  return true;
+}
+
+/* =========================================================
+   5. 进度与统计
+   ========================================================= */
+
+function stageDone(p){
+  return (p.stages || []).filter(s => s.status === "done").length;
+}
+
+function progressPct(p){
+  const done = (p.stages || []).filter(s => s.status === "done");
+  const w = done.reduce((a, s) => a + (s.weight || 0), 0);
+  return Math.min(100, Math.round(w));
+}
+
+function currentStage(p){
+  const list = p.stages || [];
+  return list.find(s => s.status !== "done") || list[list.length - 1] || null;
+}
+
+function totalWords(p){
+  return Object.values(p.wordLog || {}).reduce((a, b) => a + (+b || 0), 0);
+}
+
+function refStats(p){
+  const refs = p.refs || [];
+  return {
+    all: refs.length,
+    read: refs.filter(r => r.status === "read" || r.status === "cited").length,
+    cited: refs.filter(r => r.status === "cited").length
+  };
+}
+
+/* =========================================================
+   6. GB/T 7714-2015 著录生成
+   ========================================================= */
+
+function normAuthors(a){
+  return String(a || "")
+    .replace(/[，、;；]\s*/g, ", ")
+    .replace(/,\s*,/g, ",")
+    .replace(/\s+/g, " ")
+    .replace(/^[\s,.]+|[\s,.]+$/g, "")
+    .replace(/(\.\s*)+$/, "");
+}
+
+function toGBT(r){
+  const a  = normAuthors(r.authors);
+  const t  = String(r.title || "").trim().replace(/[。.]$/, "");
+  const s  = String(r.source || "").trim().replace(/[,，。.]$/, "");
+  const y  = String(r.year || "").trim();
+  const v  = String(r.vol || "").trim();
+  const i  = String(r.issue || "").trim();
+  const pg = String(r.pages || "").trim();
+  const pl = String(r.place || "").trim();
+  const ty = r.type || "J";
+
+  const head = (a ? a + ". " : "") + t + "[" + ty + "]";
+
+  if(ty === "J"){
+    let out = head + ". " + s;
+    if(y) out += ", " + y;
+    if(v) out += ", " + v;
+    if(i) out += "(" + i + ")";
+    if(pg) out += ": " + pg;
+    return out.replace(/\s+\./g, ".") + ".";
+  }
+  if(ty === "M" || ty === "D"){
+    let out = head + ". ";
+    if(pl) out += pl + ": ";
+    if(s) out += s;
+    if(y) out += (s || pl ? ", " : "") + y;
+    if(pg && ty === "M") out += ": " + pg;
+    return out.replace(/\s+\./g, ".") + ".";
+  }
+  if(ty === "C"){
+    let out = head + ". ";
+    if(s) out += s + ", ";
+    if(y) out += y;
+    if(pg) out += ": " + pg;
+    return out.replace(/\s+\./g, ".") + ".";
+  }
+  if(ty === "N"){
+    let out = head + ". " + s + ", " + y;
+    if(pg) out += "(" + pg + ")";
+    return out.replace(/\s+\./g, ".") + ".";
+  }
+  if(ty === "S"){
+    return t + "[S]. " + (pl ? pl + ": " : "") + (s ? s + ", " : "") + y + ".";
+  }
+  if(ty === "EB"){
+    let out = head + ". ";
+    if(y) out += "(" + y + ")";
+    out += "[" + todayStr() + "]. ";
+    if(pg) out += pg;
+    return out.replace(/\s+\./g, ".") + ".";
+  }
+  // 兜底
+  let out = head + ". " + s;
+  if(y) out += ", " + y;
+  if(pg) out += ": " + pg;
+  return out.replace(/\s+\./g, ".") + ".";
+}
+
+/* =========================================================
+   7. 粘贴文本解析
+   ========================================================= */
+
+function parseRefLine(raw){
+  let s = String(raw || "").trim().replace(/\s+/g, " ");
+  if(!s) return null;
+  s = s.replace(/^\[\d+\]\s*/, "");   // 去掉已有的序号 [1]
+
+  // 1) 抓文献类型标识
+  const tm = s.match(/\[([A-Z]{1,3}(?:\/[A-Z]{2})?)\]/i);
+  let type = "J";
+  let marker = "";
+  if(tm){
+    marker = tm[0];
+    const code = tm[1].toUpperCase();
+    type = TYPE_MAP[code] || "J";
+  }
+
+  const idx = marker ? s.indexOf(marker) : -1;
+  let before = idx >= 0 ? s.slice(0, idx) : s;
+  let after  = idx >= 0 ? s.slice(idx + marker.length).replace(/^[.\s。]+/, "") : "";
+
+  // 2) 拆作者与题名：以最后一个句点分隔
+  let authors = "", title = "";
+  const dot = before.lastIndexOf(".");
+  if(dot > 0){
+    authors = before.slice(0, dot).trim();
+    title   = before.slice(dot + 1).trim();
+  }else{
+    title = before.trim();
+  }
+  authors = authors.replace(/[.。]$/, "").trim();
+  title   = title.replace(/[.。]$/, "").trim();
+
+  const out = {
+    type: type, authors: authors, title: title,
+    source: "", place: "", year: "", vol: "", issue: "", pages: "",
+    platform: "", status: "todo", anchor: "", note: "", raw: raw.trim()
+  };
+
+  if(!after) return (title ? out : null);
+
+  // 3) 出处解析
+  if(type === "M" || type === "D"){
+    const m = after.match(/^(.+?)[:：]\s*(.+?)[,，.。]?\s*(\d{4})/);
+    if(m){
+      out.place  = m[1].trim();
+      out.source = m[2].trim().replace(/[,，.。]$/, "");
+      out.year   = m[3];
+    }else{
+      const m2 = after.match(/^(.+?)[,，.。]?\s*(\d{4})/);
+      if(m2){ out.source = m2[1].trim(); out.year = m2[2]; }
+    }
+    const pm = after.match(/:\s*(\d+(?:\s*[-–—~]\s*\d+)?)\s*[.。]?$/);
+    if(pm && type === "M") out.pages = pm[1].replace(/\s/g, "");
+  }else if(type === "N"){
+    const m = after.match(/^(.+?)[,，]\s*(\d{4}[-–]\d{1,2}[-–]\d{1,2})/);
+    if(m){ out.source = m[1].trim(); out.year = m[2]; }
+    const pm = after.match(/\((\d+)\)\s*[.。]?$/);
+    if(pm) out.pages = pm[1];
+  }else if(type === "EB"){
+    const um = after.match(/(https?:\/\/\S+)/);
+    if(um) out.pages = um[1].replace(/[.。]$/, "");
+    const ym = after.match(/(\d{4}-\d{1,2}-\d{1,2})/);
+    if(ym) out.year = ym[1];
+    const sm = after.match(/^(.+?)[.。]\s*\(/);
+    if(sm) out.source = sm[1].trim();
+  }else{
+    // 期刊（默认）
+    const ym = after.match(/(\d{4})/);
+    if(ym) out.year = ym[1];
+
+    const pm = after.match(/:\s*(\d+(?:\s*[-–—~]\s*\d+)?)\s*[.。]?$/);
+    if(pm) out.pages = pm[1].replace(/\s/g, "");
+
+    let head = ym ? after.slice(0, ym.index) : after;
+    out.source = head.replace(/[,，.。\s]+$/, "").trim();
+
+    const tail = ym ? after.slice(ym.index + 4) : "";
+    const vm = tail.match(/^[,，.。]?\s*(\d+)\s*[（(]\s*(\d+)\s*[)）]/);
+    if(vm){
+      out.vol = vm[1]; out.issue = vm[2];
+    }else{
+      const im = tail.match(/^[,，.。]?\s*[（(]\s*(\d+)\s*[)）]/);
+      if(im) out.issue = im[1];
+      else{
+        const v2 = tail.match(/^[,，.。]?\s*(\d+)/);
+        if(v2) out.vol = v2[1];
+      }
+    }
+  }
+
+  return (out.title || out.source) ? out : null;
+}
+
+/* =========================================================
+   8. 渲染：顶部统计
+   ========================================================= */
+
+function renderStats(){
+  const papers = S.papers;
+  const active = papers.filter(p => progressPct(p) < 100);
+
+  // 最近截止
+  let nearest = null, nearestLeft = Infinity;
+  papers.forEach(p => {
+    const d = daysLeft(p.finalDeadline);
+    if(d === null) return;
+    if(progressPct(p) >= 100) return;
+    if(d < nearestLeft){ nearestLeft = d; nearest = p; }
+  });
+
+  // 7 天内节点
+  let soon = 0;
+  const today = new Date();
+  papers.forEach(p => {
+    (p.stages || []).forEach(s => {
+      if(s.status === "done" || !s.planEnd) return;
+      const d = diffDays(today, parseDate(s.planEnd));
+      if(d >= 0 && d <= 7) soon++;
+    });
+  });
+
+  // 字数
+  const words = papers.reduce((a, p) => a + totalWords(p), 0);
+  const target = papers.reduce((a, p) => a + (+p.targetWords || 0), 0);
+
+  let nearestTxt = "—";
+  let nearestSub = "暂无在写论文";
+  let nearestCls = "";
+  if(nearest){
+    const d = nearestLeft;
+    nearestTxt = (d < 0 ? "逾期 " + Math.abs(d) : d) + " <i>天</i>";
+    nearestSub = shortDate(nearest.finalDeadline) + " · " + nearest.title;
+    nearestCls = d < 0 ? "danger" : (d <= 7 ? "danger" : (d <= 14 ? "warn" : ""));
+  }
+
+  document.getElementById("stats").innerHTML = [
+    '<div class="stat"><div class="stat-l">在写论文</div><div class="stat-v">' + active.length + ' <i>篇</i></div><div class="stat-s">共 ' + papers.length + ' 篇已建</div></div>',
+    '<div class="stat"><div class="stat-l">最近截止</div><div class="stat-v ' + nearestCls + '">' + nearestTxt + '</div><div class="stat-s" title="' + esc(nearestSub) + '">' + esc(nearestSub) + '</div></div>',
+    '<div class="stat"><div class="stat-l">7 天内节点</div><div class="stat-v ' + (soon > 0 ? "warn" : "") + '">' + soon + ' <i>个</i></div><div class="stat-s">未完成的阶段计划</div></div>',
+    '<div class="stat"><div class="stat-l">累计字数</div><div class="stat-v">' + num(words) + ' <i>/ ' + num(target) + '</i></div><div class="stat-s">' + (target ? Math.round(words / target * 100) : 0) + '% 完成</div></div>'
+  ].join("");
+}
+
+/* =========================================================
+   9. 渲染：未来节点
+   ========================================================= */
+
+function renderNodes(){
+  const today = new Date();
+  const items = [];
+
+  S.papers.forEach(p => {
+    (p.stages || []).forEach(s => {
+      if(s.status === "done" || !s.planEnd) return;
+      const d = diffDays(today, parseDate(s.planEnd));
+      if(d >= -3 && d <= 14){
+        items.push({ d: d, date: s.planEnd, paper: p.title, stage: s.name, status: s.status });
+      }
+    });
+  });
+
+  items.sort((a, b) => a.d - b.d);
+  const top = items.slice(0, 10);
+  const box = document.getElementById("nodes");
+
+  if(!top.length){
+    box.innerHTML = '<div class="nodes-h"><b>未来两周节点</b><span style="color:var(--tx3)">暂无待推进的阶段</span></div>';
+    return;
+  }
+
+  box.innerHTML =
+    '<div class="nodes-h"><b>未来两周节点</b><span>' + items.length + ' 个待推进</span></div>' +
+    '<div class="nodes-scroll">' +
+    top.map(it => {
+      const cls = it.d < 0 ? "over" : (it.d <= 3 ? "soon" : "");
+      const dTxt = it.d < 0 ? "逾期 " + Math.abs(it.d) + " 天" : (it.d === 0 ? "今天" : (it.d === 1 ? "明天" : "剩 " + it.d + " 天"));
+      return '<div class="node ' + cls + '">' +
+        '<div class="nd">' + shortDate(it.date) + ' · ' + dTxt + '</div>' +
+        '<div class="nn">' + esc(it.stage) + (it.status === "stuck" ? ' <span style="color:var(--red)">卡住</span>' : "") + '</div>' +
+        '<div class="np" title="' + esc(it.paper) + '">' + esc(it.paper) + '</div>' +
+      '</div>';
+    }).join("") +
+    '</div>';
+}
+
+/* =========================================================
+   10. 渲染：论文卡片
+   ========================================================= */
+
+function cardHTML(p){
+  const d = daysLeft(p.finalDeadline);
+  const pct = progressPct(p);
+  const done = stageDone(p);
+  const cur = currentStage(p);
+  const rs = refStats(p);
+  const w = totalWords(p);
+  const tw = +p.targetWords || 0;
+
+  let dCls = "", dTxt = "";
+  if(d === null){ dTxt = "未设截止"; }
+  else if(d < 0){ dCls = "danger"; dTxt = "逾期 " + Math.abs(d) + " 天"; }
+  else if(d <= 7){ dCls = "danger"; dTxt = "剩 " + d + " 天"; }
+  else if(d <= 14){ dCls = "warn"; dTxt = "剩 " + d + " 天"; }
+  else { dTxt = "剩 " + d + " 天"; }
+
+  const curTxt = cur ? (cur.status === "stuck" ? '<span style="color:var(--red)">卡在「' + esc(cur.name) + '」</span>' : esc(cur.name)) : "已完成";
+
+  return '<article class="pcard" data-act="open" data-id="' + p.id + '">' +
+    '<div class="pcard-top">' +
+      '<span class="chip c-' + p.category + '">' + CATS[p.category] + '</span>' +
+      '<span class="chip">' + esc(p.kind) + '</span>' +
+      '<span class="chip days ' + dCls + '">' + dTxt + '</span>' +
+    '</div>' +
+    '<h3>' + esc(p.title) + '</h3>' +
+    '<div class="sub">' + esc(p.course || "未填课程 / 目标期刊") + '</div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="pfoot"><span>阶段 ' + done + '/7 · ' + curTxt + '</span><span class="mono">' + num(w) + ' / ' + num(tw) + ' 字</span></div>' +
+    '<div class="refmini">' +
+      '<span>文献 <b>' + rs.all + '</b></span>' +
+      '<span>已读 <b>' + rs.read + '</b></span>' +
+      '<span>已引 <b style="color:' + (rs.cited ? "var(--green)" : "var(--tx3)") + '">' + rs.cited + '</b></span>' +
+      '<span style="margin-left:auto">截止 ' + (p.finalDeadline ? shortDate(p.finalDeadline) : "—") + '</span>' +
+    '</div>' +
+  '</article>';
+}
+
+function renderBoard(){
+  const box = document.getElementById("board");
+  const list = U.filter === "all" ? S.papers : S.papers.filter(p => p.category === U.filter);
+
+  document.querySelectorAll("#tabs .tab").forEach(t => {
+    t.classList.toggle("on", t.dataset.f === U.filter);
+  });
+
+  const total = S.papers.length;
+  document.getElementById("boardHint").textContent = total ? "共 " + total + " 篇 · 点击卡片进入详情" : "";
+
+  if(!list.length){
+    if(!S.papers.length){
+      box.innerHTML =
+        '<div class="empty">' +
+          '<h3>还没有论文</h3>' +
+          '<p>先建一篇，工作台会自动生成七个写作阶段的计划表。</p>' +
+          '<p style="color:var(--tx3);font-size:12px">数据保存在本机浏览器，不联网、不上传。</p>' +
+          '<button class="tbtn primary" data-act="new-paper">＋ 新建第一篇</button>' +
+          '<button class="tbtn" data-act="load-demo" style="margin-left:8px">载入示例看看</button>' +
+        '</div>';
+    }else{
+      box.innerHTML = '<div class="empty"><h3>这个分区还没有论文</h3><p>切换到「全部」或新建一篇。</p></div>';
+    }
+    return;
+  }
+
+  box.innerHTML = list
+    .slice()
+    .sort((a, b) => {
+      const da = a.finalDeadline || "9999-12-31";
+      const db = b.finalDeadline || "9999-12-31";
+      return da < db ? -1 : (da > db ? 1 : 0);
+    })
+    .map(cardHTML)
+    .join("");
+}
+
+/* =========================================================
+   11. 渲染：详情
+   ========================================================= */
+
+function renderDetail(){
+  const root = document.getElementById("modalRoot");
+  const p = U.detailId ? getPaper(U.detailId) : null;
+
+  if(!p){ root.innerHTML = ""; U.layer = "none"; return; }
+  U.layer = "detail";
+
+  const pct = progressPct(p);
+  const done = stageDone(p);
+  const rs = refStats(p);
+
+  const bodyMap = {
+    stages: detailStages(p),
+    refs:   detailRefs(p),
+    words:  detailWords(p)
+  };
+
+  root.innerHTML =
+  '<div class="overlay" data-act="overlay">' +
+    '<div class="modal">' +
+      '<div class="mhead">' +
+        '<div class="tt">' +
+          '<input class="mtitle" data-act="title" value="' + esc(p.title) + '" placeholder="论文题目">' +
+          '<div class="mmeta">' +
+            '<span class="chip c-' + p.category + '">' + CATS[p.category] + '</span>' +
+            '<span class="chip">' + esc(p.kind) + '</span>' +
+            '<span class="chip">阶段 ' + done + '/7</span>' +
+            '<span class="chip">文献 ' + rs.all + ' · 已引 ' + rs.cited + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<button class="xbtn" data-act="close-modal">✕</button>' +
+      '</div>' +
+
+      '<div class="mbar">' +
+        '<label class="field">归类' +
+          '<select class="sel" data-act="f-cat">' +
+            '<option value="course"' + (p.category === "course" ? " selected" : "") + '>课程作业</option>' +
+            '<option value="scholar"' + (p.category === "scholar" ? " selected" : "") + '>学位与发表</option>' +
+          '</select>' +
+        '</label>' +
+        '<label class="field">类型' +
+          '<select class="sel" data-act="f-kind">' +
+            KINDS.map(k => '<option' + (p.kind === k ? " selected" : "") + '>' + k + '</option>').join("") +
+          '</select>' +
+        '</label>' +
+        '<label class="field">课程 / 目标期刊' +
+          '<input data-act="f-course" value="' + esc(p.course || "") + '" style="width:170px" placeholder="如：思想政治教育理论与方法研究">' +
+        '</label>' +
+        '<label class="field">截止' +
+          '<input type="date" data-act="f-deadline" value="' + esc(p.finalDeadline || "") + '">' +
+        '</label>' +
+        '<label class="field">目标字数' +
+          '<input type="number" data-act="f-target" value="' + (+p.targetWords || 0) + '" style="width:88px" min="0" step="500">' +
+        '</label>' +
+      '</div>' +
+
+      '<div class="mtabs">' +
+        '<button class="mtab' + (U.tab === "stages" ? " on" : "") + '" data-act="mtab" data-t="stages">阶段计划</button>' +
+        '<button class="mtab' + (U.tab === "refs" ? " on" : "") + '" data-act="mtab" data-t="refs">参考文献</button>' +
+        '<button class="mtab' + (U.tab === "words" ? " on" : "") + '" data-act="mtab" data-t="words">字数台账</button>' +
+      '</div>' +
+
+      '<div class="mbody">' + bodyMap[U.tab] + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* --- 阶段面板 --- */
+function detailStages(p){
+  const pct = progressPct(p);
+  const now = new Date();
+  const firstStart = p.stages && p.stages[0] ? parseDate(p.stages[0].planStart) : null;
+  const lateDays = firstStart ? diffDays(now, firstStart) : 0;
+
+  const rows = (p.stages || []).map((s, i) => {
+    const over = s.status !== "done" && s.planEnd && diffDays(now, parseDate(s.planEnd)) < 0;
+    return '<tr class="s-' + s.status + '">' +
+      '<td style="width:26px;color:var(--tx3);font-variant-numeric:tabular-nums">' + (i + 1) + '</td>' +
+      '<td><div class="sname">' + esc(s.name) + '</div><div class="shint">' + esc(s.hint || "") + ' · 权重 ' + (s.weight || 0) + '%</div></td>' +
+      '<td class="datecell' + (over ? " od" : "") + '">' + (s.planStart || "—") + '<br>' + (s.planEnd || "—") + '</td>' +
+      '<td style="width:100px">' +
+        '<select class="sel" data-act="stage-status" data-k="' + s.key + '">' +
+          Object.keys(STAGE_STATUS).map(k =>
+            '<option value="' + k + '"' + (s.status === k ? " selected" : "") + '>' + STAGE_STATUS[k] + '</option>'
+          ).join("") +
+        '</select>' +
+      '</td>' +
+      '<td class="datecell" style="width:104px">' + (s.actualEnd || "—") + '</td>' +
+      '<td><input class="notein" data-act="stage-note" data-k="' + s.key + '" value="' + esc(s.note || "") + '" placeholder="备注：卡在哪一步 / 待办"></td>' +
+    '</tr>';
+  }).join("");
+
+  return '' +
+    '<div class="callout">' +
+      '<span class="ic">◈</span>' +
+      '<div>七个阶段按工作量分配天数，从截止日<b>倒排</b>到各阶段内部截止日。改截止日后点「按截止日重排」：未完成的重新计算，已完成的不动。</div>' +
+    '</div>' +
+    (lateDays < 0
+      ? '<div class="callout" style="border-color:var(--red);background:var(--red-soft)">' +
+          '<span class="ic" style="color:var(--red)">!</span>' +
+          '<div><b style="color:var(--red)">时间不够。</b>按当前截止日倒推，第一阶段应在 ' +
+          p.stages[0].planStart + ' 开始，已经过去 ' + Math.abs(lateDays) + ' 天了。' +
+          '两个选择：把截止日往后推，或者砍掉阶段里的工作量（比如综述只读 8 篇而不是 20 篇）。' +
+          '硬撑的结果通常是最后全部挤在初稿上。</div>' +
+        '</div>'
+      : '') +
+    '<div class="barline"><i style="width:' + pct + '%"></i></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx3);margin-bottom:14px">' +
+      '<span>加权进度 <b style="color:var(--tx);font-variant-numeric:tabular-nums">' + pct + '%</b></span>' +
+      '<span>计划基准日 ' + (p.scheduleFrom || p.scheduledAt || "—") + '</span>' +
+    '</div>' +
+    '<table class="grid">' +
+      '<thead><tr><th></th><th>阶段</th><th>计划起止</th><th>状态</th><th>实际完成</th><th>备注</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>' +
+    '<div class="btnrow" style="margin-top:16px">' +
+      '<button class="btn ghost danger" data-act="del-paper">删除这篇</button>' +
+      '<div style="flex:1"></div>' +
+      '<button class="btn" data-act="reschedule">按截止日重排</button>' +
+    '</div>';
+}
+
+/* --- 文献面板 --- */
+function detailRefs(p){
+  const refs = p.refs || [];
+  const rs = refStats(p);
+
+  const rows = refs.map((r, i) => {
+    const tName = REF_TYPES[r.type] || r.type || "文献";
+    return '<tr>' +
+      '<td style="width:30px;color:var(--tx3);font-variant-numeric:tabular-nums">' + (i + 1) + '</td>' +
+      '<td>' +
+        '<div class="ref-title">' + esc(r.title || "（未填题名）") + '</div>' +
+        '<div class="ref-src">' + esc([r.authors, r.source, r.year, r.issue ? "第" + r.issue + "期" : "", r.pages ? "第" + r.pages + "页" : ""].filter(Boolean).join(" · ")) + '</div>' +
+      '</td>' +
+      '<td style="width:72px"><span class="pf">' + esc(tName) + '</span></td>' +
+      '<td style="width:70px">' + (r.platform ? '<span class="pf">' + esc(r.platform) + '</span>' : '<span style="color:var(--tx3);font-size:11px">—</span>') + '</td>' +
+      '<td style="width:92px">' +
+        '<select class="st-sel st-' + r.status + '" data-act="ref-status" data-rid="' + r.id + '">' +
+          Object.keys(READ_STATUS).map(k =>
+            '<option value="' + k + '"' + (r.status === k ? " selected" : "") + '>' + READ_STATUS[k] + '</option>'
+          ).join("") +
+        '</select>' +
+      '</td>' +
+      '<td style="width:160px">' +
+        '<input class="anchorin" data-act="ref-anchor" data-rid="' + r.id + '" value="' + esc(r.anchor || "") + '" placeholder="支撑哪一节">' +
+      '</td>' +
+      '<td style="width:56px;text-align:right;white-space:nowrap">' +
+        '<button class="iconbtn" data-act="ref-edit" data-rid="' + r.id + '" title="编辑">✎</button>' +
+        '<button class="iconbtn" data-act="ref-del" data-rid="' + r.id + '" title="删除">✕</button>' +
+      '</td>' +
+    '</tr>';
+  }).join("");
+
+  return '' +
+    '<div class="refbar">' +
+      '<button class="btn primary" data-act="ref-paste">粘贴著录添加</button>' +
+      '<button class="btn" data-act="ref-manual">手动填写</button>' +
+      '<div class="spacer"></div>' +
+      '<span class="hint-txt" style="margin-right:8px">共 ' + rs.all + ' 条 · 已读 ' + rs.read + ' · 已引 ' + rs.cited + '</span>' +
+      '<button class="btn" data-act="ref-export">导出 GB/T 7714</button>' +
+    '</div>' +
+    (refs.length
+      ? '<table class="grid reftable"><thead><tr><th></th><th>著录信息</th><th>类型</th><th>平台</th><th>读的状态</th><th>正文落点</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="tip">' +
+          '<b>待读</b>＝还没读；<b>已读</b>＝精读并做了笔记；<b>已引</b>＝已写进正文。只有「已引」才计入产出。<br>' +
+          '「正文落点」填它支撑哪一节，提纲阶段就能看出哪一节文献不足。' +
+        '</div>'
+      : '<div class="empty" style="padding:44px 20px"><p>还没有文献。</p><p style="font-size:12px">在 CNKI 复制一条著录信息，点「粘贴著录添加」即可自动拆分字段。</p></div>'
+    );
+}
+
+/* --- 字数面板 --- */
+function detailWords(p){
+  const log = p.wordLog || {};
+  const keys = Object.keys(log).sort();
+  const total = totalWords(p);
+  const target = +p.targetWords || 0;
+  const today = todayStr();
+
+  // 最近 14 天视图
+  const last14 = [];
+  const base = new Date();
+  for(let i = 13; i >= 0; i--){
+    const d = addDays(base, -i);
+    const k = fmtDate(d);
+    last14.push({ k: k, v: +log[k] || 0, label: (d.getMonth() + 1) + "/" + d.getDate() });
+  }
+
+  const maxV = Math.max(1, ...last14.map(x => x.v));
+  const W = 640, H = 150, PADT = 8, PADB = 4;
+  const cw = W / last14.length;
+  const chartH = H - PADT - PADB;
+
+  // 柱子只画图形，坐标轴文字交给 HTML，避免 SVG 拉伸导致文字变形
+  const bars = last14.map((x, i) => {
+    const h = x.v / maxV * chartH;
+    const x0 = i * cw + cw * 0.2;
+    const w0 = cw * 0.6;
+    const isZero = x.v <= 0;
+    const hh = isZero ? 3 : Math.max(3, h);
+    const yy = isZero ? (PADT + chartH - 3) : (PADT + chartH - h);
+    const color = isZero ? "var(--line2)" : "var(--accent)";
+    return '<rect x="' + x0.toFixed(1) + '" y="' + yy.toFixed(1) + '" width="' + w0.toFixed(1) +
+      '" height="' + hh.toFixed(1) + '" rx="2.5" fill="' + color + '"></rect>';
+  }).join("");
+
+  const axis = last14.map((x, i) =>
+    '<span>' + (i % 2 === 0 ? x.label : "") + '</span>'
+  ).join("");
+
+  const listRows = keys.slice().reverse().map(k =>
+    '<div class="wrow"><span>' + k + '</span><span>' + num(log[k]) + ' 字<span class="del" data-act="word-del" data-k="' + k + '">删除</span></span></div>'
+  ).join("");
+
+  const pct = target ? Math.min(100, Math.round(total / target * 100)) : 0;
+
+  return '' +
+    '<div class="wgrid">' +
+      '<div>' +
+        '<div class="winput">' +
+          '<input id="wordInput" type="number" min="0" step="100" placeholder="今天写了多少字？填数字后按回车">' +
+          '<button class="btn primary" data-act="word-add">记一笔</button>' +
+        '</div>' +
+        '<div class="chartbox">' +
+          '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--tx3);margin-bottom:8px">' +
+            '<span>最近 14 天每日字数</span><span>单日最高 ' + num(maxV) + ' 字</span>' +
+          '</div>' +
+          '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="height:130px">' +
+            '<line x1="0" y1="' + (PADT + chartH) + '" x2="' + W + '" y2="' + (PADT + chartH) + '" stroke="var(--line)" stroke-width="1"></line>' +
+            bars +
+          '</svg>' +
+          '<div class="waxis">' + axis + '</div>' +
+        '</div>' +
+        '<div class="tip">进度百分比可以自我安慰，字数曲线不能。每天填一个真实数字，假不了。</div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="chartbox" style="margin-bottom:12px">' +
+          '<div class="kv"><span>累计字数</span><b>' + num(total) + '</b></div>' +
+          '<div class="kv"><span>目标字数</span><b>' + num(target) + '</b></div>' +
+          '<div class="kv"><span>完成度</span><b style="color:' + (pct >= 100 ? "var(--green)" : "var(--accent)") + '">' + pct + '%</b></div>' +
+          '<div class="kv"><span>记录天数</span><b>' + keys.length + ' 天</b></div>' +
+          '<div class="kv"><span>日均</span><b>' + (keys.length ? num(Math.round(total / keys.length)) : 0) + '</b></div>' +
+        '</div>' +
+        '<div class="chartbox">' +
+          '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:6px">每日记录</div>' +
+          '<div class="wlist">' + (listRows || '<div style="color:var(--tx3);font-size:12px;padding:10px 0">还没有记录</div>') + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+/* =========================================================
+   12. 模态：通用弹层
+   ========================================================= */
+
+function openModal(inner, small){
+  U.layer = "sub";
+  const root = document.getElementById("modalRoot");
+  root.innerHTML =
+    '<div class="overlay" data-act="overlay">' +
+      '<div class="modal' + (small ? " small" : "") + '">' + inner + '</div>' +
+    '</div>';
+}
+
+function closeModal(){
+  U.detailId = null;
+  U.layer = "none";
+  document.getElementById("modalRoot").innerHTML = "";
+}
+
+/** 关闭当前层：若是详情里弹出的子窗口，退回详情；否则整体关闭 */
+function backOut(){
+  if(U.layer === "sub" && U.detailId && getPaper(U.detailId)){
+    renderDetail();
+  }else{
+    closeModal();
+  }
+}
+
+/* --- 新建论文 --- */
+function modalNewPaper(){
+  const today = new Date();
+  const def = fmtDate(addDays(today, 30));
+  openModal(
+    '<div class="mhead"><div class="tt"><div style="font-size:17px;font-weight:600">新建论文</div>' +
+      '<div style="font-size:12px;color:var(--tx3);margin-top:3px">填完会自动生成七个阶段的倒排计划</div></div>' +
+      '<button class="xbtn" data-act="close-modal">✕</button></div>' +
+    '<div class="mbody">' +
+      '<div class="form">' +
+        '<div><label>题目<span class="req">*</span></label><input id="np-title" placeholder="如：思想政治教育数字化转型的内在逻辑"></div>' +
+        '<div class="row">' +
+          '<div><label>归类<span class="req">*</span></label><select id="np-cat">' +
+            '<option value="course">课程作业</option><option value="scholar">学位与发表</option></select></div>' +
+          '<div><label>类型<span class="req">*</span></label><select id="np-kind">' +
+            KINDS.map(k => '<option>' + k + '</option>').join("") + '</select></div>' +
+        '</div>' +
+        '<div><label>课程名 / 目标期刊</label><input id="np-course" placeholder="如：思想政治教育理论与方法研究，或《思想教育研究》"></div>' +
+        '<div class="row">' +
+          '<div><label>最终截止日<span class="req">*</span></label><input id="np-ddl" type="date" value="' + def + '"></div>' +
+          '<div><label>目标字数</label><input id="np-words" type="number" value="6000" step="500" min="0"></div>' +
+        '</div>' +
+        '<div class="tip">截止日必须填——倒排计划全靠它。填早了不要紧，可以随时在详情里改，改完点「按截止日重排」。</div>' +
+        '<div class="btnrow"><button class="btn ghost" data-act="close-modal">取消</button>' +
+        '<button class="btn primary" data-act="create-paper">创建并生成计划</button></div>' +
+      '</div>' +
+    '</div>'
+  , true);
+}
+
+/* --- 粘贴添加文献 --- */
+function modalRefPaste(pid){
+  openModal(
+    '<div class="mhead"><div class="tt"><div style="font-size:17px;font-weight:600">粘贴著录添加</div>' +
+      '<div style="font-size:12px;color:var(--tx3);margin-top:3px">从 CNKI、万方等复制一条参考文献的著录文本，支持一次粘贴多条（每行一条）</div></div>' +
+      '<button class="xbtn" data-act="close-modal">✕</button></div>' +
+    '<div class="mbody">' +
+      '<div class="form">' +
+        '<div><label>著录文本</label>' +
+          '<textarea id="rp-text" rows="6" placeholder="张三, 李四. 论思想政治教育的现代性[J]. 思想教育研究, 2023, 39(4): 12-18.&#10;张耀灿, 郑永廷. 现代思想政治教育学[M]. 北京: 人民出版社, 2006: 45."></textarea>' +
+        '</div>' +
+        '<div class="row">' +
+          '<div><label>可查证平台（统一填）</label><select id="rp-platform">' +
+            '<option value="CNKI">CNKI 中国知网</option><option value="万方">万方数据</option>' +
+            '<option value="读秀">读秀</option><option value="出版社官网">出版社官网</option>' +
+            '<option value="图书馆">图书馆藏</option><option value="Google Scholar">Google Scholar</option>' +
+            '<option value="">暂不填</option></select></div>' +
+          '<div><label>默认状态</label><select id="rp-status">' +
+            Object.keys(READ_STATUS).map(k => '<option value="' + k + '">' + READ_STATUS[k] + '</option>').join("") +
+          '</select></div>' +
+        '</div>' +
+        '<div class="tip">解析不完美没关系，添加后点 ✎ 可以逐字段改。</div>' +
+        '<div class="btnrow"><button class="btn ghost" data-act="close-modal">取消</button>' +
+        '<button class="btn primary" data-act="do-ref-paste">解析并添加</button></div>' +
+      '</div>' +
+    '</div>'
+  , true);
+}
+
+/* --- 手动填写文献 --- */
+function modalRefManual(pid, rid){
+  const p = getPaper(pid);
+  const r = rid ? (p.refs || []).find(x => x.id === rid) : null;
+  const v = k => esc(r ? (r[k] || "") : "");
+  const opts = k => Object.keys(REF_TYPES).map(t =>
+    '<option value="' + t + '"' + (r && r.type === t ? " selected" : "") + '>' + REF_TYPES[t] + '</option>'
+  ).join("");
+
+  openModal(
+    '<div class="mhead"><div class="tt"><div style="font-size:17px;font-weight:600">' + (r ? "编辑文献" : "手动填写文献") + '</div>' +
+      '<div style="font-size:12px;color:var(--tx3);margin-top:3px">按 GB/T 7714—2015 的字段拆开填，导出时自动拼成标准著录</div></div>' +
+      '<button class="xbtn" data-act="close-modal">✕</button></div>' +
+    '<div class="mbody">' +
+      '<div class="form">' +
+        '<div class="row">' +
+          '<div><label>文献类型</label><select id="rm-type">' + opts() + '</select></div>' +
+          '<div><label>可查证平台</label><input id="rm-platform" value="' + v("platform") + '" placeholder="CNKI / 万方 / 读秀 / 出版社官网"></div>' +
+        '</div>' +
+        '<div><label>作者<span class="req">*</span></label><input id="rm-authors" value="' + v("authors") + '" placeholder="多个作者用逗号分隔，超过三个加「等」"></div>' +
+        '<div><label>题名<span class="req">*</span></label><input id="rm-title" value="' + v("title") + '"></div>' +
+        '<div class="row">' +
+          '<div><label>出版地（专著 / 学位论文）</label><input id="rm-place" value="' + v("place") + '" placeholder="北京 / 广州"></div>' +
+          '<div><label>刊名 · 出版社 · 学校</label><input id="rm-source" value="' + v("source") + '"></div>' +
+        '</div>' +
+        '<div class="row3">' +
+          '<div><label>年</label><input id="rm-year" value="' + v("year") + '" placeholder="2023"></div>' +
+          '<div><label>卷</label><input id="rm-vol" value="' + v("vol") + '" placeholder="39"></div>' +
+          '<div><label>期</label><input id="rm-issue" value="' + v("issue") + '" placeholder="4"></div>' +
+        '</div>' +
+        '<div><label>页码 / 版次 / URL</label><input id="rm-pages" value="' + v("pages") + '" placeholder="12-18"></div>' +
+        '<div><label>正文落点</label><input id="rm-anchor" value="' + v("anchor") + '" placeholder="如：第三部分第二节"></div>' +
+        '<div><label>笔记 / 可引用的核心观点</label><textarea id="rm-note" rows="3" style="font-family:inherit;font-size:13px">' + (r ? esc(r.note || "") : "") + '</textarea></div>' +
+        '<div class="btnrow"><button class="btn ghost" data-act="close-modal">取消</button>' +
+        '<button class="btn primary" data-act="do-ref-save" data-rid="' + (rid || "") + '">保存</button></div>' +
+      '</div>' +
+    '</div>'
+  , true);
+}
+
+/* --- 导出 GB/T 7714 --- */
+function modalRefExport(pid){
+  const p = getPaper(pid);
+  const refs = p.refs || [];
+  if(!refs.length){ alert("这篇还没有文献。"); return; }
+
+  const txt = refs.map((r, i) => "[" + (i + 1) + "] " + toGBT(r)).join("\n");
+
+  openModal(
+    '<div class="mhead"><div class="tt"><div style="font-size:17px;font-weight:600">导出参考文献</div>' +
+      '<div style="font-size:12px;color:var(--tx3);margin-top:3px">按当前列表顺序编号，遵循 GB/T 7714—2015 顺序编码制</div></div>' +
+      '<button class="xbtn" data-act="close-modal">✕</button></div>' +
+    '<div class="mbody">' +
+      '<textarea class="refout" id="refOut" readonly>' + esc(txt) + '</textarea>' +
+      '<div class="tip">顺序编码制要求编号与正文引用顺序一致。若正文里先引了第 5 条，需要调整列表顺序后再导出。</div>' +
+      '<div class="btnrow"><button class="btn" data-act="close-modal">关闭</button>' +
+      '<button class="btn primary" data-act="copy-refs">复制到剪贴板</button></div>' +
+    '</div>'
+  , true);
+}
+
+/* --- 说明 --- */
+function modalHelp(){
+  openModal(
+    '<div class="mhead"><div class="tt"><div style="font-size:17px;font-weight:600">怎么用这个工作台</div>' +
+      '<div style="font-size:12px;color:var(--tx3);margin-top:3px">三分钟读完，之后不用再看</div></div>' +
+      '<button class="xbtn" data-act="close-modal">✕</button></div>' +
+    '<div class="mbody" style="font-size:13px;line-height:1.85">' +
+      '<div class="callout"><span class="ic">1</span><div><b>数据存在哪。</b>存在你这台电脑的浏览器里，不联网、不上传。' +
+        '但<b>清浏览器缓存会连同数据一起清掉</b>——所以每周点一次右上角「导出备份」，会下载一个 .json 文件，存到网盘或 U 盘。换电脑就「导入备份」。</div></div>' +
+      '<div class="callout"><span class="ic">2</span><div><b>截止日倒排怎么算。</b>七个阶段的工作量比例是 8 / 22 / 12 / 33 / 15 / 6 / 4。' +
+        '系统拿你填的最终截止日，按比例把天数分下去，从后往前推出每个阶段的内部截止日，最后还留 8% 的缓冲天。' +
+        '改截止日后必须点「按截止日重排」，否则计划不会动。</div></div>' +
+      '<div class="callout"><span class="ic">3</span><div><b>文献三个状态。</b>待读 → 已读（精读并做了笔记）→ 已引（已写进正文）。' +
+        '只有「已引」才算产出。一条文献读了一年没引，等于没读。</div></div>' +
+      '<div class="callout"><span class="ic">4</span><div><b>著录格式依据。</b>GB/T 7714—2015《信息与文献 参考文献著录规则》，2015 年发布实施，替代 2005 版。' +
+        '文献类型标识：J 期刊、M 专著、D 学位论文、C 论文集、N 报纸、S 标准、EB 电子资源。' +
+        '平台栏填 CNKI / 万方 / 读秀 / 出版社官网，是为了让每一条都能被查证。</div></div>' +
+      '<div class="callout"><span class="ic">5</span><div><b>为什么要记字数。</b>阶段进度是主观判断，可以糊弄自己；字数是你真写出来的东西，糊弄不了。' +
+        '每天睡前填一个真实数字，一个月后看曲线，就知道自己到底在动还是在想。</div></div>' +
+      '<div class="btnrow"><button class="btn primary" data-act="close-modal">知道了</button></div>' +
+    '</div>'
+  , true);
+}
+
+/* =========================================================
+   13. 业务操作
+   ========================================================= */
+
+function createPaper(data){
+  const p = {
+    id: uid(),
+    title: data.title,
+    category: data.category,
+    kind: data.kind,
+    course: data.course,
+    finalDeadline: data.finalDeadline,
+    targetWords: +data.targetWords || 6000,
+    scheduleFrom: todayStr(),
+    stages: [],
+    refs: [],
+    wordLog: {},
+    createdAt: todayStr()
+  };
+  reschedule(p, todayStr());
+  S.papers.push(p);
+  save();
+  renderAll();
+  return p;
+}
+
+function loadDemo(){
+  const ddl = fmtDate(addDays(new Date(), 34));
+
+  const p1 = createPaper({
+    title: "思想政治教育数字化转型的内在逻辑与实践进路",
+    category: "course",
+    kind: "课程论文",
+    course: "思想政治教育理论与方法研究",
+    finalDeadline: ddl,
+    targetWords: 6000
+  });
+
+  // 示例文献（均为真实存在的公开出版物，可按著录信息核查）
+  p1.refs = [
+    {
+      id: uid(), type: "M", authors: "张耀灿, 郑永廷, 刘书林, 等",
+      title: "现代思想政治教育学", source: "人民出版社", place: "北京",
+      year: "2006", vol: "", issue: "", pages: "",
+      platform: "图书馆", status: "cited", anchor: "第一部分 概念界定",
+      note: "学科基础教材，用于界定思想政治教育的内涵与外延", raw: ""
+    },
+    {
+      id: uid(), type: "M", authors: "马克思, 恩格斯",
+      title: "马克思恩格斯选集: 第1卷", source: "人民出版社", place: "北京",
+      year: "2012", vol: "", issue: "", pages: "",
+      platform: "图书馆", status: "read", anchor: "",
+      note: "待补：与技术异化相关的段落", raw: ""
+    },
+    {
+      id: uid(), type: "M", authors: "习近平",
+      title: "高举中国特色社会主义伟大旗帜 为全面建设社会主义现代化国家而团结奋斗——在中国共产党第二十次全国代表大会上的报告",
+      source: "人民出版社", place: "北京",
+      year: "2022", vol: "", issue: "", pages: "",
+      platform: "出版社官网", status: "read", anchor: "第二部分 政策依据",
+      note: "教育数字化相关表述", raw: ""
+    }
+  ];
+
+  // 示例阶段推进：前两个阶段已完成
+  if(p1.stages[0]){ p1.stages[0].status = "done"; p1.stages[0].actualEnd = todayStr(); }
+  if(p1.stages[1]){ p1.stages[1].status = "doing"; }
+
+  // 示例字数台账
+  const log = {};
+  for(let i = 9; i >= 0; i--){
+    const dt = addDays(new Date(), -i);
+    log[fmtDate(dt)] = [0, 320, 0, 480, 610, 0, 900, 750, 0, 520][9 - i];
+  }
+  p1.wordLog = log;
+
+  save();
+  renderAll();
+  U.detailId = p1.id;
+  U.tab = "stages";
+  renderDetail();
+}
+
+/* =========================================================
+   14. 全局渲染
+   ========================================================= */
+
+function renderAll(){
+  renderStats();
+  renderNodes();
+  renderBoard();
+}
+
+/* =========================================================
+   15. 事件
+   ========================================================= */
+
+document.addEventListener("click", function(e){
+  const el = e.target.closest("[data-act]");
+  if(!el) return;
+  const act = el.dataset.act;
+
+  // 点击遮罩空白处关闭
+  if(act === "overlay"){
+    if(e.target === el) backOut();
+    return;
+  }
+
+  switch(act){
+    case "new-paper":
+      modalNewPaper();
+      break;
+
+    case "create-paper": {
+      const title = (document.getElementById("np-title").value || "").trim();
+      const ddl = document.getElementById("np-ddl").value;
+      if(!title){ alert("题目不能空着。"); return; }
+      if(!ddl){ alert("截止日必须填，倒排计划要用它。"); return; }
+      const p = createPaper({
+        title: title,
+        category: document.getElementById("np-cat").value,
+        kind: document.getElementById("np-kind").value,
+        course: (document.getElementById("np-course").value || "").trim(),
+        finalDeadline: ddl,
+        targetWords: document.getElementById("np-words").value
+      });
+      U.detailId = p.id;
+      U.tab = "stages";
+      renderDetail();
+      break;
+    }
+
+    case "open": {
+      U.detailId = el.dataset.id;
+      U.tab = "stages";
+      renderDetail();
+      break;
+    }
+
+    case "close-modal":
+      backOut();
+      break;
+
+    case "mtab":
+      U.tab = el.dataset.t;
+      renderDetail();
+      break;
+
+    case "reschedule": {
+      const p = getPaper(U.detailId);
+      if(!p) return;
+      if(!confirm("按截止日 " + p.finalDeadline + " 重排七个阶段的计划起止日？\n\n已完成的状态、实际完成日和备注都会保留，只重算计划日期。")) return;
+      reschedule(p, todayStr());
+      save();
+      renderAll();
+      renderDetail();
+      break;
+    }
+
+    case "del-paper": {
+      const p = getPaper(U.detailId);
+      if(!p) return;
+      if(!confirm("删除《" + p.title + "》？\n\n文献 " + (p.refs || []).length + " 条、字数记录 " + Object.keys(p.wordLog || {}).length + " 天会一起删掉，不能恢复。")) return;
+      S.papers = S.papers.filter(x => x.id !== p.id);
+      save();
+      closeModal();
+      renderAll();
+      break;
+    }
+
+    case "ref-paste":
+      modalRefPaste(U.detailId);
+      break;
+
+    case "do-ref-paste": {
+      const p = getPaper(U.detailId);
+      if(!p) return;
+      const txt = document.getElementById("rp-text").value || "";
+      const platform = document.getElementById("rp-platform").value;
+      const status = document.getElementById("rp-status").value;
+      const lines = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      let ok = 0, fail = 0;
+
+      lines.forEach(line => {
+        const r = parseRefLine(line);
+        if(r && r.title){
+          r.id = uid();
+          r.platform = platform || r.platform;
+          r.status = status || "todo";
+          p.refs.push(r);
+          ok++;
+        }else{
+          fail++;
+        }
+      });
+
+      if(!ok){ alert("一条都没解析出来。换「手动填写」更稳，或者检查文本是否是「作者. 题名[J]. 刊名, 年, 卷(期): 页码.」这种格式。"); return; }
+      save();
+      renderAll();
+      renderDetail();
+      if(fail) alert("成功 " + ok + " 条，失败 " + fail + " 条。失败的请手动补。");
+      break;
+    }
+
+    case "ref-manual":
+      modalRefManual(U.detailId, "");
+      break;
+
+    case "ref-edit":
+      modalRefManual(U.detailId, el.dataset.rid);
+      break;
+
+    case "do-ref-save": {
+      const p = getPaper(U.detailId);
+      if(!p) return;
+      const rid = el.dataset.rid;
+      const g = id => (document.getElementById(id).value || "").trim();
+      const obj = {
+        type: g("rm-type"), authors: g("rm-authors"), title: g("rm-title"),
+        place: g("rm-place"), source: g("rm-source"), year: g("rm-year"),
+        vol: g("rm-vol"), issue: g("rm-issue"), pages: g("rm-pages"),
+        platform: g("rm-platform"), anchor: g("rm-anchor"), note: document.getElementById("rm-note").value
+      };
+      if(!obj.title){ alert("题名不能空着。"); return; }
+
+      if(rid){
+        const r = p.refs.find(x => x.id === rid);
+        if(r) Object.assign(r, obj);
+      }else{
+        obj.id = uid();
+        obj.status = "todo";
+        obj.raw = "";
+        p.refs.push(obj);
+      }
+      save();
+      renderAll();
+      U.tab = "refs";
+      renderDetail();
+      break;
+    }
+
+    case "ref-del": {
+      const p = getPaper(U.detailId);
+      const r = p.refs.find(x => x.id === el.dataset.rid);
+      if(!r) return;
+      if(!confirm("删除文献「" + (r.title || "") + "」？")) return;
+      p.refs = p.refs.filter(x => x.id !== el.dataset.rid);
+      save();
+      renderAll();
+      renderDetail();
+      break;
+    }
+
+    case "ref-export":
+      modalRefExport(U.detailId);
+      break;
+
+    case "copy-refs": {
+      const ta = document.getElementById("refOut");
+      ta.removeAttribute("readonly");
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+      let ok = false;
+      try{ ok = document.execCommand("copy"); }catch(err){ ok = false; }
+      ta.setAttribute("readonly", "readonly");
+      if(!ok && navigator.clipboard){
+        navigator.clipboard.writeText(ta.value).then(
+          () => alert("已复制 " + ta.value.split("\n").length + " 条。"),
+          () => alert("复制失败，请手动全选复制。")
+        );
+      }else{
+        alert(ok ? "已复制 " + ta.value.split("\n").length + " 条。" : "复制失败，请手动全选复制。");
+      }
+      break;
+    }
+
+    case "word-add": {
+      const p = getPaper(U.detailId);
+      if(!p) return;
+      const input = document.getElementById("wordInput");
+      const v = parseInt(input.value, 10);
+      if(isNaN(v) || v < 0){ alert("填一个数字。"); return; }
+      const k = todayStr();
+      p.wordLog[k] = (p.wordLog[k] || 0) + v;
+      save();
+      renderAll();
+      renderDetail();
+      break;
+    }
+
+    case "word-del": {
+      const p = getPaper(U.detailId);
+      const k = el.dataset.k;
+      if(!p.wordLog[k]) return;
+      if(!confirm("删除 " + k + " 的 " + p.wordLog[k] + " 字记录？")) return;
+      delete p.wordLog[k];
+      save();
+      renderAll();
+      renderDetail();
+      break;
+    }
+
+    case "filter":
+      U.filter = el.dataset.f;
+      renderBoard();
+      break;
+
+    case "theme": {
+      S.theme = (S.theme === "dark") ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", S.theme);
+      save();
+      break;
+    }
+
+    case "help":
+      modalHelp();
+      break;
+
+    case "load-demo":
+      loadDemo();
+      break;
+
+    case "export-json": {
+      if(!S.papers.length){ alert("还没有数据。"); return; }
+      const blob = new Blob([JSON.stringify(S, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "论文工作台备份_" + todayStr() + ".json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      break;
+    }
+
+    case "import-json":
+      document.getElementById("fileInput").click();
+      break;
+  }
+});
+
+/* 输入框即时保存（不重绘，避免失焦） */
+document.addEventListener("change", function(e){
+  const el = e.target;
+  const act = el.dataset ? el.dataset.act : null;
+  if(!act) return;
+
+  const p = U.detailId ? getPaper(U.detailId) : null;
+  if(!p) return;
+
+  if(act === "title"){
+    p.title = el.value.trim() || "未命名";
+    save(); renderAll();
+  }
+  else if(act === "f-cat"){ p.category = el.value; save(); renderAll(); renderDetail(); }
+  else if(act === "f-kind"){ p.kind = el.value; save(); renderAll(); renderDetail(); }
+  else if(act === "f-course"){ p.course = el.value.trim(); save(); renderAll(); }
+  else if(act === "f-target"){ p.targetWords = +el.value || 0; save(); renderAll(); renderDetail(); }
+  else if(act === "f-deadline"){
+    p.finalDeadline = el.value;
+    save(); renderAll(); renderDetail();
+    if(confirm("截止日已改为 " + el.value + "。要现在按新日期重排七个阶段吗？")){
+      reschedule(p, todayStr());
+      save(); renderAll(); renderDetail();
+    }
+  }
+  else if(act === "stage-status"){
+    const s = p.stages.find(x => x.key === el.dataset.k);
+    if(!s) return;
+    s.status = el.value;
+    if(el.value === "done" && !s.actualEnd) s.actualEnd = todayStr();
+    if(el.value !== "done") s.actualEnd = "";
+    save(); renderAll(); renderDetail();
+  }
+  else if(act === "stage-note"){
+    const s = p.stages.find(x => x.key === el.dataset.k);
+    if(!s) return;
+    s.note = el.value;
+    save();
+  }
+  else if(act === "ref-status"){
+    const r = p.refs.find(x => x.id === el.dataset.rid);
+    if(!r) return;
+    r.status = el.value;
+    save(); renderAll(); renderDetail();
+  }
+  else if(act === "ref-anchor"){
+    const r = p.refs.find(x => x.id === el.dataset.rid);
+    if(!r) return;
+    r.anchor = el.value;
+    save();
+  }
+});
+
+/* 字数输入框回车提交 */
+document.addEventListener("keydown", function(e){
+  if(e.key === "Enter" && e.target && e.target.id === "wordInput"){
+    const btn = document.querySelector('[data-act="word-add"]');
+    if(btn) btn.click();
+  }
+  if(e.key === "Escape"){
+    const root = document.getElementById("modalRoot");
+    if(root.innerHTML) backOut();
+  }
+});
+
+/* 导入备份 */
+document.getElementById("fileInput").addEventListener("change", function(e){
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const o = JSON.parse(reader.result);
+      if(!o || !Array.isArray(o.papers)) throw new Error("格式不对");
+      if(!confirm("导入会覆盖当前所有数据（当前 " + S.papers.length + " 篇 → 备份中 " + o.papers.length + " 篇）。\n\n确定吗？")) return;
+      S = o;
+      S.papers.forEach(p => {
+        p.stages = p.stages || [];
+        p.refs = p.refs || [];
+        p.wordLog = p.wordLog || {};
+      });
+      save();
+      document.documentElement.setAttribute("data-theme", S.theme || "dark");
+      U.detailId = null;
+      document.getElementById("modalRoot").innerHTML = "";
+      renderAll();
+      alert("导入成功，共 " + S.papers.length + " 篇。");
+    }catch(err){
+      alert("导入失败：文件不是有效的工作台备份。");
+    }
+  };
+  reader.readAsText(f, "utf-8");
+  e.target.value = "";
+});
+
+/* =========================================================
+   16. 启动
+   ========================================================= */
+
+S = load() || blankState();
+document.documentElement.setAttribute("data-theme", S.theme || "dark");
+renderAll();
+
+})();
+</script>
+</body>
+</html>
